@@ -1,90 +1,67 @@
-import requests
-import feedparser
-from bs4 import BeautifulSoup
-import random
-import time
+import pandas as pd
+import json
+from datetime import datetime
 
-def fetch_opportunities(keywords, sources):
-    opportunities = []
-    
-    # NIH RePORTER API
+def fetch_opportunities(keywords=None, sources=None):
+    # Use default values if None
+    keywords = keywords if keywords is not None else []
+    sources = sources if sources is not None else []
+
+    # Load configuration as fallback
     try:
-        for kw in keywords:
-            url = sources["nih"]
-            payload = {"criteria": {"textSearch": kw}, "includeFields": ["projectTitle", "projectEndDate", "awardAmount"]}
-            r = requests.post(url, json=payload)
-            for project in r.json().get("results", [])[:2]:  # Limit to 2 per keyword
-                funding = float(project.get("awardAmount", 0))
-                fit_score = random.randint(80, 95)
-                opportunities.append({
-                    "title": project["projectTitle"],
-                    "agency": "NIH",
-                    "fit_score": fit_score,
-                    "funding_weighted_score": fit_score * funding if funding > 0 else "N/A",
-                    "deadline": project.get("projectEndDate", "N/A"),
-                    "funding_amount": funding,
-                    "specific_aims": [
-                        f"Develop {kw}-based diagnostic for rapid detection",
-                        f"Optimize {kw} platform for therapeutic delivery",
-                        f"Validate {kw} sensor in clinical settings"
-                    ]
+        with open('config.json', 'r') as f:
+            config = json.load(f)
+        keywords = keywords or config.get('keywords', [])
+        sources = sources or config.get('sources', [])
+    except FileNotFoundError:
+        pass
+
+    # Mock data (no API calls)
+    grants_data = []
+    mock_data = {
+        "NIH": [{"title": "Aptamer-Based Cardiac Therapy", "description": "aptamer diagnostics", "funding": 5000000, "deadline": "2025-12-31", "aims": "Develop aptamer diagnostic tool"}],
+        "Grants.gov": [{"title": "Opioid Diagnostic Grant", "description": "opioid diagnostics CNS", "closeDate": "2025-06-30", "objectives": "Improve opioid detection"}],
+        "Gates Foundation": [{"title": "Fentanyl Biosensor Grant", "description": "fentanyl biosensor", "goals": "Create fentanyl detection system"}]
+    }
+
+    for source in sources:
+        if source in mock_data:
+            for item in mock_data[source]:
+                grants_data.append({
+                    "title": item.get("title", f"{source} Grant"),
+                    "agency": source,
+                    "fit_score": calculate_fit_score(item.get("description", ""), keywords),
+                    "funding_weighted_score": item.get("funding", 0) * (calculate_fit_score(item.get("description", ""), keywords) / 100) if item.get("funding") else None,
+                    "deadline": item.get("deadline", item.get("closeDate", datetime.now().strftime("%Y-%m-%d"))),
+                    "specific_aims": item.get("aims", item.get("objectives", item.get("goals", "No specific aims provided"))),
+                    "responding": False,
+                    "status": "In Process"
                 })
-    except Exception as e:
-        print(f"NIH error: {e}")
 
-    # Grants.gov RSS
-    try:
-        feed = feedparser.parse(sources["grants_gov"])
-        for entry in feed.entries[:2]:  # Limit to 2
-            title = entry.title
-            score = 80 + sum(2 for kw in keywords if kw.lower() in title.lower()) * 2
-            opportunities.append({
-                "title": title,
-                "agency": "Grants.gov",
-                "fit_score": min(score, 100),
-                "funding_weighted_score": "N/A",  # Funding data unavailable
-                "deadline": entry.get("published", "N/A"),
-                "funding_amount": "",
-                "specific_aims": [
-                    f"Apply aptamer tech to {title.lower()}",
-                    f"Develop {kw} for {title.lower()}",
-                    f"Translate {title.lower()} to clinical use"
-                ]
-            })
-    except Exception as e:
-        print(f"Grants.gov error: {e}")
+    df = pd.DataFrame(grants_data) if grants_data else pd.DataFrame(columns=["title", "agency", "fit_score", "funding_weighted_score", "deadline", "specific_aims", "responding", "status"])
+    with open('grants.json', 'w') as f:
+        json.dump(grants_data, f)
+    return df
 
-    # Gates Foundation (scraping)
-    try:
-        url = sources["gates"]
-        soup = BeautifulSoup(requests.get(url).text, "html.parser")
-        for card in soup.find_all("div", class_="grant-card")[:2]:  # Limit to 2
-            title = card.find("h3").text if card.find("h3") else "Grant Opportunity"
-            score = 80 + sum(2 for kw in keywords if kw.lower() in title.lower()) * 2
-            opportunities.append({
-                "title": title,
-                "agency": "Gates Foundation",
-                "fit_score": min(score, 95),
-                "funding_weighted_score": "N/A",
-                "deadline": "N/A",
-                "funding_amount": "",
-                "specific_aims": [
-                    f"Design {kw}-based solution for {title.lower()}",
-                    f"Scale {kw} for global health",
-                    f"Partner for {title.lower()} deployment"
-                ]
-            })
-            time.sleep(2)  # Respect rate limits
-    except Exception as e:
-        print(f"Gates error: {e}")
-
-    return opportunities
-
-def fetch_collaborators(opportunity):
-    gaps = ["Clinical Translation"] if "diagnostic" in opportunity.lower() else ["Field-Deployable Sensors"]
-    collaborators = [
-        {"name": "John Smith", "org": "PhageTech Inc.", "expertise": "Field-deployable biosensors", "contact": "john@phagetech.com", "background": "Developed DARPA sensors"},
-        {"name": "Jane Doe", "org": "BioSense Solutions", "expertise": "Clinical trial design", "contact": "jane@biosense.com", "background": "Led FDA trials"},
-        {"name": "Emily Chen", "org": "NeuroTech Labs", "expertise": "CNS biomarker", "contact": "emily@neurotechlabs.com", "background": "Published in Nature"}
+def fetch_collaborators():
+    # Mock collaborator data
+    collaborators_data = [
+        {"name": "Yonatan Lipsitz", "expertise": "Aptamer Design", "fit_score": 95, "status": "Current"},
+        {"name": "John Smith", "expertise": "Data Analysis", "fit_score": 85, "status": "Potential"}
     ]
-    return gaps, collaborators[:3]
+    df = pd.DataFrame(collaborators_data)
+    with open('collaborators.json', 'w') as f:
+        json.dump(collaborators_data, f)
+    return df
+
+def calculate_fit_score(description, keywords):
+    if not description or not keywords:
+        return 0
+    score = sum(1 for keyword in keywords if keyword.lower() in description.lower()) * (100 / len(keywords)) if keywords else 0
+    return min(100, max(0, score))
+
+if __name__ == "__main__":
+    df_opp = fetch_opportunities()
+    df_collab = fetch_collaborators()
+    print("Opportunities:\n", df_opp)
+    print("Collaborators:\n", df_collab)
