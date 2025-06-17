@@ -1,0 +1,8 @@
+{
+    "keywords": "aptamer,biosensor,fentanyl,opioid,diagnostics,CNS",
+    "sources": {
+        "nih": "https://api.reporter.nih.gov/v2/projects/search",
+        "grants_gov": "https://www.grants.gov/rss/GGNewOpportunities.xml",
+        "gates": "https://www.gatesfoundation.org/what-we-do/global-health/grand-challenges"
+    }
+}
