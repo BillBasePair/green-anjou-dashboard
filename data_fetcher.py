@@ -33,7 +33,10 @@ def fetch_opportunities(keywords=None, sources=None):
                 print(f"Response status code: {response.status_code}")
                 if response.status_code == 200:
                     data = response.json()
-                    print(f"Received data: {len(data.get('items', []))} items found")  # Simplified log
+                    item_count = len(data.get("items", []))
+                    print(f"Received data: {item_count} items found")
+                    if item_count > 0:
+                        print(f"Sample item: {json.dumps(data['items'][0], indent=2)}")  # Log first item for debug
                     try:
                         for item in data.get("items", []):
                             abstract = item.get("abstract_text", "").lower()
@@ -59,9 +62,9 @@ def fetch_opportunities(keywords=None, sources=None):
         elif source == "Gates Foundation":
             pass
 
-    # Force mock data if no results, regardless of keywords, for now
+    # Force mock data if no results
     if not grants_data:
-        print("Adding mock data due to no results")
+        print("!!! FORCED MOCK DATA ADDED !!!")
         grants_data.append({
             "title": "Mock NIH Opportunity - Test",
             "agency": "NIH",
