@@ -33,20 +33,23 @@ def fetch_opportunities(keywords=None, sources=None):
                 print(f"Response status code: {response.status_code}")
                 if response.status_code == 200:
                     data = response.json()
-                    print(f"Received data: {json.dumps(data, indent=2)}")
-                    for item in data.get("items", []):
-                        abstract = item.get("abstract_text", "").lower()
-                        fit_score = sum(1 for keyword in keywords if keyword.lower() in abstract) * (100 / len(keywords)) if keywords else 0
-                        grants_data.append({
-                            "title": item.get("project_title", "NIH Opportunity"),
-                            "agency": "NIH",
-                            "fit_score": min(100, max(0, fit_score)),
-                            "funding_weighted_score": item.get("total_cost", 0) * (fit_score / 100),
-                            "deadline": item.get("project_end_date", ""),
-                            "specific_aims": item.get("abstract_text", "No specific aims"),
-                            "responding": False,
-                            "status": "In Process"
-                        })
+                    print(f"Received data: {len(data.get('items', []))} items found")  # Simplified log
+                    try:
+                        for item in data.get("items", []):
+                            abstract = item.get("abstract_text", "").lower()
+                            fit_score = sum(1 for keyword in keywords if keyword.lower() in abstract) * (100 / len(keywords)) if keywords else 0
+                            grants_data.append({
+                                "title": item.get("project_title", "NIH Opportunity"),
+                                "agency": "NIH",
+                                "fit_score": min(100, max(0, fit_score)),
+                                "funding_weighted_score": item.get("total_cost", 0) * (fit_score / 100),
+                                "deadline": item.get("project_end_date", ""),
+                                "specific_aims": item.get("abstract_text", "No specific aims"),
+                                "responding": False,
+                                "status": "In Process"
+                            })
+                    except Exception as e:
+                        print(f"Error processing items: {e}")
                 else:
                     print(f"NIH API request failed with status code: {response.status_code}")
             except requests.exceptions.RequestException as e:
@@ -56,16 +59,16 @@ def fetch_opportunities(keywords=None, sources=None):
         elif source == "Gates Foundation":
             pass
 
-    # Add mock data if no results and "melanoma" is a keyword, for deployed fallback
-    if not grants_data and "melanoma" in [kw.lower() for kw in keywords]:
+    # Force mock data if no results, regardless of keywords, for now
+    if not grants_data:
         print("Adding mock data due to no results")
         grants_data.append({
-            "title": "Mock NIH Opportunity - Melanoma",
+            "title": "Mock NIH Opportunity - Test",
             "agency": "NIH",
             "fit_score": 50,
             "funding_weighted_score": 1000000,
             "deadline": "2025-12-31",
-            "specific_aims": "Mock research aims including melanoma",
+            "specific_aims": "Mock research aims for testing",
             "responding": False,
             "status": "In Process"
         })
