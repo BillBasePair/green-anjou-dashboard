@@ -15,19 +15,19 @@ def fetch_opportunities(keywords=None, sources=None):
                 "criteria": {
                     "search_terms": " ".join(keywords),
                     "include_active_projects": True,
-                    "activity_codes": ["R01", "R21", "U01"]  # Added common research grant types
+                    "activity_codes": ["R41", "R42", "R43", "R44", "R01", "R21", "U01"]  # Added common research grant types
                 },
                 "limit": 50  # Increased limit to 50
             }
             headers = {
                 "Content-Type": "application/json",
-                "User-Agent": "GreenAnjouDashboard/1.0 (your-email@domain.com)",  # Replace with your email
+                "User-Agent": "GreenAnjouDashboard/1.0 (bill.jackson@basepairbio.com)",  # Replace with your actual email
                 "api_key": "e61dd522d8109420aeef9afaf905b245b308"
             }
             try:
                 print(f"Attempting POST to {url}")
                 print(f"Payload: {payload}")
-                response = requests.post(url, json=payload, headers=headers, timeout=10)
+                response = requests.post(url, json=payload, headers=headers, timeout=60)
                 print(f"Response status code: {response.status_code}")
                 if response.status_code == 200:
                     data = response.json()
