@@ -17,7 +17,7 @@ sources = ["NIH", "Grants.gov", "Gates Foundation"]  # Hardcoded for now, adjust
 if st.sidebar.button("Refresh Now", key="sidebar_refresh"):
     st.session_state.grants = fetch_opportunities(keywords, sources).to_dict('records')
     st.session_state.collaborators = fetch_collaborators().to_dict('records')
-    st.experimental_rerun()
+    st.rerun()
 
 # Main content
 st.title("Green Anjou - Bill’s Grant Opportunity Dashboard")
@@ -28,7 +28,7 @@ st.write("Keywords (comma-separated)")
 st.text_input("keywords", value="aptamer,biosensor,fentanyl,opioid,diagnostics,CNS", key="keywords_input")
 if st.button("Refresh Now", key="main_refresh"):
     st.session_state.grants = fetch_opportunities(keywords, sources).to_dict('records')
-    st.experimental_rerun()
+    st.rerun()
 
 # Display opportunities
 if st.session_state.grants:
