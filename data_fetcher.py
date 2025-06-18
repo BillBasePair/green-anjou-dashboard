@@ -14,13 +14,14 @@ def fetch_opportunities(keywords=None, sources=None):
             payload = {
                 "criteria": {
                     "search_terms": " ".join(keywords),
-                    "include_active_projects": True
+                    "include_active_projects": True,
+                    "activity_codes": ["R01", "R21", "U01"]  # Added common research grant types
                 },
-                "limit": 10
+                "limit": 50  # Increased limit to 50
             }
             headers = {
                 "Content-Type": "application/json",
-                "User-Agent": "GreenAnjouDashboard/1.0 (billbasepair@gmail.com)",
+                "User-Agent": "GreenAnjouDashboard/1.0 (your-email@domain.com)",  # Replace with your email
                 "api_key": "e61dd522d8109420aeef9afaf905b245b308"
             }
             try:
