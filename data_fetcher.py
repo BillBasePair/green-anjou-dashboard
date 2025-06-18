@@ -33,21 +33,20 @@ def fetch_opportunities(keywords=None, sources=None):
                 print(f"Response status code: {response.status_code}")
                 if response.status_code == 200:
                     data = response.json()
-                    print(f"Received data: {data}")
+                    print(f"Received data: {json.dumps(data, indent=2)}")
                     for item in data.get("items", []):
                         abstract = item.get("abstract_text", "").lower()
                         fit_score = sum(1 for keyword in keywords if keyword.lower() in abstract) * (100 / len(keywords)) if keywords else 0
-                        if fit_score > 0:
-                            grants_data.append({
-                                "title": item.get("project_title", "NIH Opportunity"),
-                                "agency": "NIH",
-                                "fit_score": min(100, max(0, fit_score)),
-                                "funding_weighted_score": item.get("total_cost", 0) * (fit_score / 100),
-                                "deadline": item.get("project_end_date", ""),
-                                "specific_aims": item.get("abstract_text", "No specific aims"),
-                                "responding": False,
-                                "status": "In Process"
-                            })
+                        grants_data.append({
+                            "title": item.get("project_title", "NIH Opportunity"),
+                            "agency": "NIH",
+                            "fit_score": min(100, max(0, fit_score)),
+                            "funding_weighted_score": item.get("total_cost", 0) * (fit_score / 100),
+                            "deadline": item.get("project_end_date", ""),
+                            "specific_aims": item.get("abstract_text", "No specific aims"),
+                            "responding": False,
+                            "status": "In Process"
+                        })
                 else:
                     print(f"NIH API request failed with status code: {response.status_code}")
             except requests.exceptions.RequestException as e:
