@@ -11,17 +11,17 @@ if 'collaborators' not in st.session_state:
 # Sidebar for keywords and refresh
 st.sidebar.header("Grant Search")
 keywords_input = st.sidebar.text_input("Keywords (comma-separated)", "aptamer,biosensor,fentanyl,opioid,diagnostics,CNS")
-keywords = [kw.strip() for kw in keywords_input.split(',') if kw.strip()]
-sources = ["NIH", "Grants.gov", "Gates Foundation"]  # Hardcoded for now, adjust if in config
 
 # Function to refresh data
 def refresh_data():
+    keywords = [kw.strip() for kw in keywords_input.split(',') if kw.strip()]
+    sources = ["NIH", "Grants.gov", "Gates Foundation"]  # Hardcoded for now, adjust if in config
     st.session_state.grants = fetch_opportunities(keywords, sources).to_dict('records')
     st.session_state.collaborators = fetch_collaborators().to_dict('records')
 
 # Trigger data refresh on button click
 if st.sidebar.button("Refresh Now", key="sidebar_refresh", on_click=refresh_data):
-    st.rerun()  # Use rerun instead of experimental_rerun
+    st.rerun()  # Use rerun to refresh the app
 
 # Main content
 st.title("Green Anjou - Bill’s Grant Opportunity Dashboard")
@@ -30,7 +30,7 @@ st.title("Green Anjou - Bill’s Grant Opportunity Dashboard")
 st.header("Opportunities")
 st.write(f"Current Keywords: {keywords_input}")  # Display current keywords as text
 if st.button("Refresh Now", key="main_refresh", on_click=refresh_data):
-    st.rerun()  # Use rerun instead of experimental_rerun
+    st.rerun()  # Use rerun to refresh the app
 
 # Display opportunities
 if st.session_state.grants:
