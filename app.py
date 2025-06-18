@@ -14,21 +14,23 @@ keywords_input = st.sidebar.text_input("Keywords (comma-separated)", "aptamer,bi
 keywords = [kw.strip() for kw in keywords_input.split(',') if kw.strip()]
 sources = ["NIH", "Grants.gov", "Gates Foundation"]  # Hardcoded for now, adjust if in config
 
-if st.sidebar.button("Refresh Now", key="sidebar_refresh"):
+# Function to refresh data
+def refresh_data():
     st.session_state.grants = fetch_opportunities(keywords, sources).to_dict('records')
     st.session_state.collaborators = fetch_collaborators().to_dict('records')
-    st.rerun()
+
+# Trigger data refresh on button click
+if st.sidebar.button("Refresh Now", key="sidebar_refresh", on_click=refresh_data):
+    st.experimental_rerun()  # Use experimental_rerun for full refresh
 
 # Main content
 st.title("Green Anjou - Bill’s Grant Opportunity Dashboard")
 
 # Opportunities Tab
 st.header("Opportunities")
-st.write("Keywords (comma-separated)")
-st.text_input("keywords", value="aptamer,biosensor,fentanyl,opioid,diagnostics,CNS", key="keywords_input")
-if st.button("Refresh Now", key="main_refresh"):
-    st.session_state.grants = fetch_opportunities(keywords, sources).to_dict('records')
-    st.rerun()
+st.write(f"Current Keywords: {keywords_input}")  # Display current keywords as text
+if st.button("Refresh Now", key="main_refresh", on_click=refresh_data):
+    st.experimental_rerun()  # Use experimental_rerun for full refresh
 
 # Display opportunities
 if st.session_state.grants:
