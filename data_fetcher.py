@@ -1,42 +1,65 @@
 import pandas as pd
 import json
+import requests
 from datetime import datetime
 
 def fetch_opportunities(keywords=None, sources=None):
-    # Use default values if None
-    keywords = keywords if keywords is not None else []
-    sources = sources if sources is not None else []
-
-    # Load configuration as fallback
-    try:
-        with open('config.json', 'r') as f:
-            config = json.load(f)
-        keywords = keywords or config.get('keywords', [])
-        sources = sources or config.get('sources', [])
-    except FileNotFoundError:
-        pass
-
-    # Mock data (no API calls)
+    keywords = keywords or []
+    sources = sources or []
     grants_data = []
-    mock_data = {
-        "NIH": [{"title": "Aptamer-Based Cardiac Therapy", "description": "aptamer diagnostics", "funding": 5000000, "deadline": "2025-12-31", "aims": "Develop aptamer diagnostic tool"}],
-        "Grants.gov": [{"title": "Opioid Diagnostic Grant", "description": "opioid diagnostics CNS", "closeDate": "2025-06-30", "objectives": "Improve opioid detection"}],
-        "Gates Foundation": [{"title": "Fentanyl Biosensor Grant", "description": "fentanyl biosensor", "goals": "Create fentanyl detection system"}]
-    }
 
     for source in sources:
-        if source in mock_data:
-            for item in mock_data[source]:
+        if source == "NIH":
+            url = "https://api.reporter.nih.gov/v2/projects/search"
+            payload = {
+                "criteria": {
+                    "search_terms": " ".join(keywords),
+                    "include_active_projects": True
+                },
+                "limit": 10
+            }
+            headers = {
+                "Content-Type": "application/json",
+                "User-Agent": "GreenAnjouDashboard/1.0 (billbasepair@gmail.com)",
+                "api_key": "e61dd522d8109420aeef9afaf905b245b308"
+            }
+            try:
+                print(f"Attempting POST to {url}")
+                print(f"Payload: {payload}")
+                response = requests.post(url, json=payload, headers=headers, timeout=10)
+                print(f"Response status code: {response.status_code}")
+                if response.status_code == 200:
+                    data = response.json()
+                    print(f"Received data: {data}")
+                    for item in data.get("items", []):
+                        grants_data.append({
+                            "title": item.get("project_title", "NIH Opportunity"),
+                            "agency": "NIH",
+                            "fit_score": calculate_fit_score(item.get("abstract_text", ""), keywords),
+                            "funding_weighted_score": item.get("total_cost", 0) * (calculate_fit_score(item.get("abstract_text", ""), keywords) / 100),
+                            "deadline": item.get("project_end_date", ""),
+                            "specific_aims": item.get("abstract_text", "No specific aims"),
+                            "responding": False,
+                            "status": "In Process"
+                        })
+                else:
+                    print(f"NIH API request failed with status code: {response.status_code}")
+            except requests.exceptions.RequestException as e:
+                print(f"Failed to connect to NIH API: {e}")
                 grants_data.append({
-                    "title": item.get("title", f"{source} Grant"),
-                    "agency": source,
-                    "fit_score": calculate_fit_score(item.get("description", ""), keywords),
-                    "funding_weighted_score": item.get("funding", 0) * (calculate_fit_score(item.get("description", ""), keywords) / 100) if item.get("funding") else None,
-                    "deadline": item.get("deadline", item.get("closeDate", datetime.now().strftime("%Y-%m-%d"))),
-                    "specific_aims": item.get("aims", item.get("objectives", item.get("goals", "No specific aims provided"))),
+                    "title": "Mock NIH Opportunity",
+                    "agency": "NIH",
+                    "fit_score": 50,
+                    "funding_weighted_score": 1000000,
+                    "deadline": "2025-12-31",
+                    "specific_aims": "Mock research aims",
                     "responding": False,
                     "status": "In Process"
                 })
+        elif source == "Grants.gov":
+            pass
+        elif source == "Gates Foundation":
+            pass
 
     df = pd.DataFrame(grants_data) if grants_data else pd.DataFrame(columns=["title", "agency", "fit_score", "funding_weighted_score", "deadline", "specific_aims", "responding", "status"])
     with open('grants.json', 'w') as f:
@@ -44,7 +67,6 @@ def fetch_opportunities(keywords=None, sources=None):
     return df
 
 def fetch_collaborators():
-    # Mock collaborator data
     collaborators_data = [
         {"name": "Yonatan Lipsitz", "expertise": "Aptamer Design", "fit_score": 95, "status": "Current"},
         {"name": "John Smith", "expertise": "Data Analysis", "fit_score": 85, "status": "Potential"}
