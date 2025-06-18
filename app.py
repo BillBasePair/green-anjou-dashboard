@@ -21,7 +21,7 @@ def refresh_data():
 
 # Trigger data refresh on button click
 if st.sidebar.button("Refresh Now", key="sidebar_refresh", on_click=refresh_data):
-    st.experimental_rerun()  # Use experimental_rerun for full refresh
+    st.rerun()  # Use rerun instead of experimental_rerun
 
 # Main content
 st.title("Green Anjou - Bill’s Grant Opportunity Dashboard")
@@ -30,7 +30,7 @@ st.title("Green Anjou - Bill’s Grant Opportunity Dashboard")
 st.header("Opportunities")
 st.write(f"Current Keywords: {keywords_input}")  # Display current keywords as text
 if st.button("Refresh Now", key="main_refresh", on_click=refresh_data):
-    st.experimental_rerun()  # Use experimental_rerun for full refresh
+    st.rerun()  # Use rerun instead of experimental_rerun
 
 # Display opportunities
 if st.session_state.grants:
