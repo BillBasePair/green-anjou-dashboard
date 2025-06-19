@@ -10,10 +10,10 @@ def fetch_opportunities(keywords=None, sources=None):
     sources = sources or []
     grants_data = []
 
-    print(f"Starting fetch_opportunities with keywords: {keywords}, sources: {sources}")  # Debug startup
+    print(f"Starting fetch_opportunities with keywords: {keywords}, sources: {sources}")
     for source in sources:
         if source == "Grants.gov":
-            url = "https://api.grants.gov/api/v1/api/search2"
+            url = "https://api.grants.gov/v1/api/search2"  # Correct endpoint
             payload = {
                 "query": {
                     "search_text": " ".join(keywords),
@@ -24,13 +24,17 @@ def fetch_opportunities(keywords=None, sources=None):
                     "rows": 50
                 }
             }
+            api_key = os.getenv("GRANTS_API_KEY", "")  # Add API key via environment variable
             headers = {
                 "Content-Type": "application/json",
                 "User-Agent": "GreenAnjouDashboard/1.0 (bill.jackson@basepairbio.com)"
             }
+            if api_key:
+                headers["X-API-Key"] = api_key
             try:
                 print(f"Attempting POST to {url} with keywords: {keywords}")
                 print(f"Payload: {payload}")
+                print(f"Headers: {headers}")
                 response = requests.post(url, json=payload, headers=headers, timeout=60)
                 print(f"Response status code: {response.status_code}")
                 if response.status_code == 200:
@@ -66,12 +70,16 @@ def fetch_opportunities(keywords=None, sources=None):
                 print(f"Response status code: {response.status_code}")
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, "html.parser")
-                    opportunities = soup.find_all("div", class_="result-item")  # Placeholder class
+                    # Verify these classes by inspecting https://www.grants.gov/search-results
+                    opportunities = soup.find_all("div", class_="search-result")  # Placeholder
                     print(f"Scraped {len(opportunities)} items")
                     for item in opportunities:
-                        title = item.find("h3", class_="title").text.strip() if item.find("h3", class_="title") else "Unnamed Opportunity"
-                        agency = item.find("span", class_="agency").text.strip() if item.find("span", class_="agency") else "Unknown"
-                        deadline = item.find("span", class_="deadline").text.strip() if item.find("span", class_="deadline") else ""
+                        title_elem = item.find("h2", class_="search-result-title")  # Placeholder
+                        agency_elem = item.find("span", class_="agency-name")  # Placeholder
+                        deadline_elem = item.find("span", class_="close-date")  # Placeholder
+                        title = title_elem.text.strip() if title_elem else "Unnamed Opportunity"
+                        agency = agency_elem.text.strip() if agency_elem else "Unknown"
+                        deadline = deadline_elem.text.strip() if deadline_elem else ""
                         grants_data.append({
                             "title": title,
                             "agency": agency,
@@ -103,7 +111,7 @@ def fetch_opportunities(keywords=None, sources=None):
             "status": "In Process"
         })
 
-    print(f"Fetch completed with {len(grants_data)} items")  # Debug completion
+    print(f"Fetch completed with {len(grants_data)} items")
     df = pd.DataFrame(grants_data) if grants_data else pd.DataFrame(columns=["title", "agency", "fit_score", "funding_weighted_score", "deadline", "specific_aims", "responding", "status"])
     with open('grants.json', 'w') as f:
         json.dump(grants_data, f)
