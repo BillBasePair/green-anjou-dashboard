@@ -13,7 +13,7 @@ def fetch_opportunities(keywords, sources):
 
     for keyword in keywords:
         if "Grants.gov" in sources:
-            # API call (currently returning 0 items, needs auth fix)
+            # API call (needs authentication fix for 200 status)
             api_url = "https://api.grants.gov/v1/api/search2"
             payload = {
                 'query': {
@@ -42,37 +42,32 @@ def fetch_opportunities(keywords, sources):
                 print(f"Grants.gov API request failed with status code: {response.status_code}")
 
         if "WebScrape" in sources:
-            # Web scraping attempt
-            scrape_url = f"https://www.grants.gov/search-grants?keywords={keyword}"
-            response = requests.get(scrape_url, headers=headers)
+            # Web scraping with form submission simulation
+            scrape_url = "https://www.grants.gov/search-grants"
+            payload = {
+                'inp-keywords': keyword,
+                'btn-search': 'Search'
+            }
+            response = requests.post(scrape_url, data=payload, headers=headers)
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, 'html.parser')
-                # Adjust this selector based on actual HTML structure
-                table = soup.find('table', class_='usa-table usa-table--striped')
+                # Look for the results table (adjust selector based on post-search HTML)
+                table = soup.find('table', class_='usa-table-container--scrollable')
                 if table:
-                    rows = table.find_all('tr')
-                    for row in rows[1:]:  # Skip header row
+                    rows = table.find_all('tr')[1:]  # Skip header row
+                    for row in rows:
                         cols = row.find_all('td')
-                        if len(cols) >= 3:  # Ensure enough columns
+                        if len(cols) >= 2:  # Minimum columns for title and agency
                             grants.append({
                                 'title': cols[0].get_text(strip=True) if cols[0].get_text(strip=True) else 'N/A',
-                                'agency': cols[1].get_text(strip=True) if cols[1].get_text(strip=True) else 'N/A',
-                                'deadline': cols[2].get_text(strip=True) if cols[2].get_text(strip=True) else 'N/A',
+                                'agency': cols[1].get_text(strip=True) if len(cols) > 1 and cols[1].get_text(strip=True) else 'N/A',
+                                'deadline': cols[2].get_text(strip=True) if len(cols) > 2 and cols[2].get_text(strip=True) else 'N/A',
                                 'specific_aims': 'N/A',  # Adjust if abstract is available
                                 'funding_weighted_score': None,
                                 'status': 'In Process'
                             })
                 else:
-                    print(f"No table with class 'usa-table usa-table--striped' found for {keyword}")
-                    # Fallback to mock data if no real data
-                    grants.append({
-                        'title': f"Mock Grant for {keyword}",
-                        'agency': 'N/A',
-                        'deadline': 'N/A',
-                        'specific_aims': 'N/A',
-                        'funding_weighted_score': None,
-                        'status': 'In Process'
-                    })
+                    print(f"No valid data table found for {keyword} after search")
             else:
                 print(f"Scrape request failed with status code: {response.status_code}")
 
@@ -84,5 +79,3 @@ def fetch_collaborators():
         {'name': 'John Doe', 'expertise': 'Data Scientist', 'status': 'Available'},
         {'name': 'Jane Smith', 'expertise': 'Regulatory Expert', 'status': 'Available'}
     ])
-
-# Remove incomplete calculate_fit function
