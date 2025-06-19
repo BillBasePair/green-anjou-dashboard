@@ -13,7 +13,7 @@ def fetch_opportunities(keywords=None, sources=None):
     print(f"Starting fetch_opportunities with keywords: {keywords}, sources: {sources}")
     for source in sources:
         if source == "Grants.gov":
-            url = "https://api.grants.gov/v1/api/search2"  # Correct endpoint
+            url = "https://api.grants.gov/v1/api/search2"
             payload = {
                 "query": {
                     "search_text": " ".join(keywords),
@@ -24,7 +24,7 @@ def fetch_opportunities(keywords=None, sources=None):
                     "rows": 50
                 }
             }
-            api_key = os.getenv("GRANTS_API_KEY", "")  # Add API key via environment variable
+            api_key = os.getenv("GRANTS_API_KEY", "")
             headers = {
                 "Content-Type": "application/json",
                 "User-Agent": "GreenAnjouDashboard/1.0 (bill.jackson@basepairbio.com)"
@@ -59,7 +59,7 @@ def fetch_opportunities(keywords=None, sources=None):
             except requests.exceptions.RequestException as e:
                 print(f"Failed to connect to Grants.gov API: {e}")
         elif source == "WebScrape":
-            url = "https://www.grants.gov/search-results"
+            url = "https://www.grants.gov/search-grants"  # Updated to the correct Search for Grants URL
             params = {"keywords": " ".join(keywords)}
             headers = {
                 "User-Agent": "GreenAnjouDashboard/1.0 (bill.jackson@basepairbio.com)"
@@ -70,13 +70,13 @@ def fetch_opportunities(keywords=None, sources=None):
                 print(f"Response status code: {response.status_code}")
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, "html.parser")
-                    # Verify these classes by inspecting https://www.grants.gov/search-results
-                    opportunities = soup.find_all("div", class_="search-result")  # Placeholder
+                    # Verify these classes by inspecting https://www.grants.gov/search-grants
+                    opportunities = soup.find_all("div", class_="search-result")  # Placeholder, adjust
                     print(f"Scraped {len(opportunities)} items")
                     for item in opportunities:
-                        title_elem = item.find("h2", class_="search-result-title")  # Placeholder
-                        agency_elem = item.find("span", class_="agency-name")  # Placeholder
-                        deadline_elem = item.find("span", class_="close-date")  # Placeholder
+                        title_elem = item.find("h2", class_="search-result-title")  # Placeholder, adjust
+                        agency_elem = item.find("span", class_="agency-name")  # Placeholder, adjust
+                        deadline_elem = item.find("span", class_="close-date")  # Placeholder, adjust
                         title = title_elem.text.strip() if title_elem else "Unnamed Opportunity"
                         agency = agency_elem.text.strip() if agency_elem else "Unknown"
                         deadline = deadline_elem.text.strip() if deadline_elem else ""
@@ -127,14 +127,4 @@ def fetch_collaborators():
         json.dump(collaborators_data, f)
     return df
 
-def calculate_fit_score(description, keywords):
-    if not description or not keywords:
-        return 0
-    score = sum(1 for keyword in keywords if keyword.lower() in description.lower()) * (100 / len(keywords)) if keywords else 0
-    return min(100, max(0, score))
-
-if __name__ == "__main__":
-    df_opp = fetch_opportunities()
-    df_collab = fetch_collaborators()
-    print("Opportunities:\n", df_opp)
-    print("Collaborators:\n", df_collab)
+def calculate_fit
