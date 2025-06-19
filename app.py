@@ -9,7 +9,6 @@ try:
     st.write("Scraping and processing data...")
 except Exception as e:
     st.error(f"Error loading spaCy or scraping: {e}. Using static data as fallback.")
-    # Fallback data from previous suggestion
     foundation_data = [{"Source": "Test", "Title": "Sample Grant", "Fit Score": "50%", "Link": "https://example.com", "Description": "Test description"}]
     st.write("**Foundation Opportunities (Fallback):**")
     for opp in foundation_data:
