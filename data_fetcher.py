@@ -47,7 +47,6 @@ def fetch_opportunities(keywords=None, sources=None):
                         grants_data.append({
                             "title": item.get("title", "Grants.gov Opportunity"),
                             "agency": item.get("agency", "Unknown"),
-                            "fit_score": 0,
                             "funding_weighted_score": 0,
                             "deadline": item.get("close_date", ""),
                             "specific_aims": item.get("description", "No description available"),
@@ -59,7 +58,7 @@ def fetch_opportunities(keywords=None, sources=None):
             except requests.exceptions.RequestException as e:
                 print(f"Failed to connect to Grants.gov API: {e}")
         elif source == "WebScrape":
-            url = "https://www.grants.gov/search-grants"
+            url = "https://www.grants.gov/search-grants"  # Corrected URL
             params = {"keywords": " ".join(keywords)}
             headers = {
                 "User-Agent": "GreenAnjouDashboard/1.0 (bill.jackson@basepairbio.com)"
@@ -83,7 +82,6 @@ def fetch_opportunities(keywords=None, sources=None):
                                     grants_data.append({
                                         "title": cells[1].text.strip() if cells[1].text.strip() else "Unnamed Opportunity",
                                         "agency": cells[2].text.strip() if cells[2].text.strip() else "Unknown",
-                                        "fit_score": 0,
                                         "funding_weighted_score": 0,
                                         "deadline": cells[5].text.strip() if cells[5].text.strip() else "",  # Close Date
                                         "specific_aims": "Scraped description placeholder",
@@ -107,8 +105,7 @@ def fetch_opportunities(keywords=None, sources=None):
         grants_data.append({
             "title": "Mock NIH Opportunity - Test",
             "agency": "NIH",
-            "fit_score": 50,
-            "funding_weighted_score": 1000000,
+            "funding_weighted_score": 0,
             "deadline": "2025-12-31",
             "specific_aims": "Mock research aims for testing",
             "responding": False,
@@ -116,26 +113,20 @@ def fetch_opportunities(keywords=None, sources=None):
         })
 
     print(f"Fetch completed with {len(grants_data)} items")
-    df = pd.DataFrame(grants_data) if grants_data else pd.DataFrame(columns=["title", "agency", "fit_score", "funding_weighted_score", "deadline", "specific_aims", "responding", "status"])
+    df = pd.DataFrame(grants_data) if grants_data else pd.DataFrame(columns=["title", "agency", "funding_weighted_score", "deadline", "specific_aims", "responding", "status"])
     with open('grants.json', 'w') as f:
         json.dump(grants_data, f)
     return df
 
 def fetch_collaborators():
     collaborators_data = [
-        {"name": "Yonatan Lipsitz", "expertise": "Aptamer Design", "fit_score": 95, "status": "Current"},
-        {"name": "John Smith", "expertise": "Data Analysis", "fit_score": 85, "status": "Potential"}
+        {"name": "Yonatan Lipsitz", "expertise": "Aptamer Design", "status": "Current"},
+        {"name": "John Smith", "expertise": "Data Analysis", "status": "Potential"}
     ]
     df = pd.DataFrame(collaborators_data)
     with open('collaborators.json', 'w') as f:
         json.dump(collaborators_data, f)
     return df
-
-def calculate_fit_score(description, keywords):
-    if not description or not keywords:
-        return 0
-    score = sum(1 for keyword in keywords if keyword.lower() in description.lower()) * (100 / len(keywords)) if keywords else 0
-    return min(100, max(0, score))
 
 if __name__ == "__main__":
     df_opp = fetch_opportunities()
