@@ -30,25 +30,35 @@ def scrape_foundations():
         "Wellcome Trust": "https://wellcome.org/grants-funding/funding-schemes"
     }
     opportunities = []
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
     for name, url in foundations.items():
-        response = requests.get(url, timeout=10)
-        soup = BeautifulSoup(response.text, "html.parser")
-        # Simplified scraping - adjust selectors based on actual site structure
-        grants = soup.find_all("div", class_=["grant-card", "funding-opportunity"])
-        for grant in grants[:5]:  # Limit to 5 for demo
-            title = grant.find("h3") or grant.find("a")
-            title_text = title.text.strip() if title else "Untitled Opportunity"
-            desc = grant.find("p")
-            desc_text = desc.text.strip() if desc else "No description available"
-            fit_score = calculate_fit_score(title_text + " " + desc_text, 
-                                          USER_KEYWORDS["Aptamers"] + USER_KEYWORDS["Neuro & Immunology"] + USER_KEYWORDS["Opioids & Detection"])
-            opportunities.append({
-                "Source": name,
-                "Title": title_text,
-                "Fit Score": f"{fit_score:.1f}%",
-                "Link": url if title and title.get("href") else url,
-                "Description": desc_text
-            })
+        try:
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "html.parser")
+            # Adjusted selectors based on site inspection
+            if "gatesfoundation" in url.lower():
+                grants = soup.find_all("div", class_="challenge-card")  # Example selector, adjust as needed
+            elif "wellcome" in url.lower():
+                grants = soup.find_all("article", class_="funding-opportunity")  # Example selector, adjust as needed
+            else:
+                grants = []
+            for grant in grants[:5]:  # Limit to 5 for demo
+                title = grant.find("h3") or grant.find("a", class_="title")
+                title_text = title.text.strip() if title else "Untitled Opportunity"
+                desc = grant.find("p", class_="description")
+                desc_text = desc.text.strip() if desc else "No description available"
+                fit_score = calculate_fit_score(title_text + " " + desc_text, 
+                                              USER_KEYWORDS["Aptamers"] + USER_KEYWORDS["Neuro & Immunology"] + USER_KEYWORDS["Opioids & Detection"])
+                opportunities.append({
+                    "Source": name,
+                    "Title": title_text,
+                    "Fit Score": f"{fit_score:.1f}%",
+                    "Link": url if title and title.get("href") else url,
+                    "Description": desc_text
+                })
+        except requests.RequestException as e:
+            st.write(f"Error scraping {name}: {e}")
     return opportunities
 
 # Simulated Grants.gov data (pending API key)
@@ -73,6 +83,10 @@ tabs = st.tabs(["Foundation", "Grants.gov", "NIH RePORTER"])
 
 with tabs[0]:  # Foundation Tab
     st.header("Foundation Opportunities")
+    custom_url = st.text_input("Enter custom foundation URL (optional)", "")
+    if custom_url:
+        foundations = {"Custom": custom_url}
+        st.write(f"Scraping custom URL: {custom_url}")
     opportunities = scrape_foundations()
     if opportunities:
         for opp in opportunities:
@@ -83,7 +97,7 @@ with tabs[0]:  # Foundation Tab
             st.write(f"**Description:** {opp['Description']}")
             st.write("---")
     else:
-        st.write("No foundation opportunities found. Check site accessibility.")
+        st.write("No foundation opportunities found. Check site accessibility or try a custom URL.")
 
 with tabs[1]:  # Grants.gov Tab
     st.header("Grants.gov Opportunities")
