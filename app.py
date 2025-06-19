@@ -5,19 +5,19 @@ import os
 
 # Initialize session state with default keywords
 if 'grants' not in st.session_state:
-    default_keywords = os.getenv("DEFAULT_KEYWORDS", "aptamer,biosensor,melanoma").split(",")
-    st.session_state.grants = fetch_opportunities([kw.strip() for kw in default_keywords], ["NIH"]).to_dict('records')
+    default_keywords = os.getenv("DEFAULT_KEYWORDS", "aptamer,GPCR,prostate").split(",")
+    st.session_state.grants = fetch_opportunities([kw.strip() for kw in default_keywords], ["Grants.gov", "WebScrape"]).to_dict('records')
 if 'collaborators' not in st.session_state:
     st.session_state.collaborators = fetch_collaborators().to_dict('records')
 
 # Sidebar for keywords and refresh
 st.sidebar.header("Grant Search")
-keywords_input = st.sidebar.text_input("Keywords (comma-separated)", os.getenv("DEFAULT_KEYWORDS", "aptamer,biosensor,melanoma"))
+keywords_input = st.sidebar.text_input("Keywords (comma-separated)", os.getenv("DEFAULT_KEYWORDS", "aptamer,GPCR,prostate"))
 
 # Function to refresh data
 def refresh_data():
     keywords = [kw.strip() for kw in keywords_input.split(',') if kw.strip()]
-    sources = ["NIH", "Grants.gov", "Gates Foundation"]
+    sources = ["Grants.gov", "WebScrape"]  # Switch to Grants.gov and WebScrape
     st.session_state.grants = fetch_opportunities(keywords, sources).to_dict('records')
     st.session_state.collaborators = fetch_collaborators().to_dict('records')
     st.write("Debug: Refreshed grants count:", len(st.session_state.grants))

@@ -3,6 +3,7 @@ import json
 import requests
 import os
 from datetime import datetime
+from bs4 import BeautifulSoup
 
 def fetch_opportunities(keywords=None, sources=None):
     keywords = keywords or []
@@ -10,21 +11,21 @@ def fetch_opportunities(keywords=None, sources=None):
     grants_data = []
 
     for source in sources:
-        if source == "NIH":
-            url = "https://api.reporter.nih.gov/v2/projects/search"
+        if source == "Grants.gov":
+            url = "https://api.grants.gov/api/v1/api/search2"
             payload = {
-                "criteria": {
-                    "search_terms": " ".join(keywords),
-                    "fiscal_years": ["2023", "2024", "2025"],
-                    "activity_codes": ["R41", "R42", "R43", "R44", "R01", "R21", "U01"]
-                },
-                "limit": 50
+                "query": {
+                    "search_text": " ".join(keywords),
+                    "posted_date_from": "2023-01-01",
+                    "posted_date_to": "2025-06-18",
+                    "sort_by": "posted_date",
+                    "sort_order": "desc",
+                    "rows": 50
+                }
             }
-            api_key = os.getenv("API_KEY", "e61dd522d8109420aeef9afaf905b245b308")
             headers = {
                 "Content-Type": "application/json",
-                "User-Agent": "GreenAnjouDashboard/1.0 (bill.jackson@basepairbio.com)",
-                "api_key": api_key
+                "User-Agent": "GreenAnjouDashboard/1.0 (bill.jackson@basepairbio.com)"
             }
             try:
                 print(f"Attempting POST to {url} with keywords: {keywords}")
@@ -33,33 +34,57 @@ def fetch_opportunities(keywords=None, sources=None):
                 print(f"Response status code: {response.status_code}")
                 if response.status_code == 200:
                     data = response.json()
-                    item_count = len(data.get("items", []))
-                    print(f"Received data: {item_count} items found")
-                    if item_count > 0:
-                        print(f"Sample item: {json.dumps(data['items'][0], indent=2)}")  # Log first item for debug
-                    try:
-                        for item in data.get("items", []):
-                            abstract = item.get("abstract_text", "").lower()
-                            fit_score = sum(1 for keyword in keywords if keyword.lower() in abstract) * (100 / len(keywords)) if keywords else 0
-                            grants_data.append({
-                                "title": item.get("project_title", "NIH Opportunity"),
-                                "agency": "NIH",
-                                "fit_score": min(100, max(0, fit_score)),
-                                "funding_weighted_score": item.get("total_cost", 0) * (fit_score / 100),
-                                "deadline": item.get("project_end_date", ""),
-                                "specific_aims": item.get("abstract_text", "No specific aims"),
-                                "responding": False,
-                                "status": "In Process"
-                            })
-                    except Exception as e:
-                        print(f"Error processing items: {e}")
+                    print(f"Received data: {len(data.get('results', []))} items found")
+                    if len(data.get("results", [])) > 0:
+                        print(f"Sample item: {json.dumps(data['results'][0], indent=2)}")
+                    for item in data.get("results", []):
+                        grants_data.append({
+                            "title": item.get("title", "Grants.gov Opportunity"),
+                            "agency": item.get("agency", "Unknown"),
+                            "fit_score": 0,  # Placeholder, can refine later
+                            "funding_weighted_score": 0,  # Placeholder
+                            "deadline": item.get("close_date", ""),
+                            "specific_aims": item.get("description", "No description available"),
+                            "responding": False,
+                            "status": "In Process"
+                        })
                 else:
-                    print(f"NIH API request failed with status code: {response.status_code}")
+                    print(f"Grants.gov API request failed with status code: {response.status_code}")
             except requests.exceptions.RequestException as e:
-                print(f"Failed to connect to NIH API: {e}")
-        elif source == "Grants.gov":
-            pass
-        elif source == "Gates Foundation":
+                print(f"Failed to connect to Grants.gov API: {e}")
+        elif source == "WebScrape":
+            url = "https://www.grants.gov/search-results"
+            params = {"keywords": " ".join(keywords)}
+            headers = {
+                "User-Agent": "GreenAnjouDashboard/1.0 (bill.jackson@basepairbio.com)"
+            }
+            try:
+                print(f"Attempting GET to {url} with keywords: {keywords}")
+                response = requests.get(url, params=params, headers=headers, timeout=60)
+                print(f"Response status code: {response.status_code}")
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, "html.parser")
+                    opportunities = soup.find_all("div", class_="result-item")  # Adjust class based on actual HTML
+                    print(f"Scraped {len(opportunities)} items")
+                    for item in opportunities:
+                        title = item.find("h3", class_="title").text.strip() if item.find("h3", class_="title") else "Unnamed Opportunity"
+                        agency = item.find("span", class_="agency").text.strip() if item.find("span", class_="agency") else "Unknown"
+                        deadline = item.find("span", class_="deadline").text.strip() if item.find("span", class_="deadline") else ""
+                        grants_data.append({
+                            "title": title,
+                            "agency": agency,
+                            "fit_score": 0,
+                            "funding_weighted_score": 0,
+                            "deadline": deadline,
+                            "specific_aims": "Scraped description placeholder",
+                            "responding": False,
+                            "status": "In Process"
+                        })
+                else:
+                    print(f"Web scrape request failed with status code: {response.status_code}")
+            except requests.exceptions.RequestException as e:
+                print(f"Failed to connect to Grants.gov for scraping: {e}")
+        elif source == "NIH":  # Keep NIH as fallback, disabled for now
             pass
 
     # Force mock data if no results
