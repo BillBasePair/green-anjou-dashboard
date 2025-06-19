@@ -17,7 +17,7 @@ keywords_input = st.sidebar.text_input("Keywords (comma-separated)", os.getenv("
 # Function to refresh data
 def refresh_data():
     keywords = [kw.strip() for kw in keywords_input.split(',') if kw.strip()]
-    sources = ["Grants.gov", "WebScrape"]  # Switch to Grants.gov and WebScrape
+    sources = ["Grants.gov", "WebScrape"]
     st.session_state.grants = fetch_opportunities(keywords, sources).to_dict('records')
     st.session_state.collaborators = fetch_collaborators().to_dict('records')
     st.write("Debug: Refreshed grants count:", len(st.session_state.grants))
