@@ -10,6 +10,7 @@ def fetch_opportunities(keywords=None, sources=None):
     sources = sources or []
     grants_data = []
 
+    print(f"Starting fetch_opportunities with keywords: {keywords}, sources: {sources}")  # Debug startup
     for source in sources:
         if source == "Grants.gov":
             url = "https://api.grants.gov/api/v1/api/search2"
@@ -34,22 +35,23 @@ def fetch_opportunities(keywords=None, sources=None):
                 print(f"Response status code: {response.status_code}")
                 if response.status_code == 200:
                     data = response.json()
-                    print(f"Received data: {len(data.get('results', []))} items found")
-                    if len(data.get("results", [])) > 0:
+                    item_count = len(data.get("results", []))
+                    print(f"Received data: {item_count} items found")
+                    if item_count > 0:
                         print(f"Sample item: {json.dumps(data['results'][0], indent=2)}")
                     for item in data.get("results", []):
                         grants_data.append({
                             "title": item.get("title", "Grants.gov Opportunity"),
                             "agency": item.get("agency", "Unknown"),
-                            "fit_score": 0,  # Placeholder, can refine later
-                            "funding_weighted_score": 0,  # Placeholder
+                            "fit_score": 0,
+                            "funding_weighted_score": 0,
                             "deadline": item.get("close_date", ""),
                             "specific_aims": item.get("description", "No description available"),
                             "responding": False,
                             "status": "In Process"
                         })
                 else:
-                    print(f"Grants.gov API request failed with status code: {response.status_code}")
+                    print(f"Grants.gov API request failed with status code: {response.status_code}, Response: {response.text}")
             except requests.exceptions.RequestException as e:
                 print(f"Failed to connect to Grants.gov API: {e}")
         elif source == "WebScrape":
@@ -64,7 +66,7 @@ def fetch_opportunities(keywords=None, sources=None):
                 print(f"Response status code: {response.status_code}")
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, "html.parser")
-                    opportunities = soup.find_all("div", class_="result-item")  # Adjust class based on actual HTML
+                    opportunities = soup.find_all("div", class_="result-item")  # Placeholder class
                     print(f"Scraped {len(opportunities)} items")
                     for item in opportunities:
                         title = item.find("h3", class_="title").text.strip() if item.find("h3", class_="title") else "Unnamed Opportunity"
@@ -81,10 +83,10 @@ def fetch_opportunities(keywords=None, sources=None):
                             "status": "In Process"
                         })
                 else:
-                    print(f"Web scrape request failed with status code: {response.status_code}")
+                    print(f"Web scrape request failed with status code: {response.status_code}, Response: {response.text}")
             except requests.exceptions.RequestException as e:
                 print(f"Failed to connect to Grants.gov for scraping: {e}")
-        elif source == "NIH":  # Keep NIH as fallback, disabled for now
+        elif source == "NIH":
             pass
 
     # Force mock data if no results
@@ -101,6 +103,7 @@ def fetch_opportunities(keywords=None, sources=None):
             "status": "In Process"
         })
 
+    print(f"Fetch completed with {len(grants_data)} items")  # Debug completion
     df = pd.DataFrame(grants_data) if grants_data else pd.DataFrame(columns=["title", "agency", "fit_score", "funding_weighted_score", "deadline", "specific_aims", "responding", "status"])
     with open('grants.json', 'w') as f:
         json.dump(grants_data, f)
