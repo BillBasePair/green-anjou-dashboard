@@ -39,7 +39,7 @@ if st.button("Refresh Now", key="main_refresh", on_click=refresh_data):
 st.write("Debug: Grants data:", st.session_state.grants)
 if st.session_state.grants:
     for grant in st.session_state.grants:
-        with st.expander(f"{grant['title']} - {grant['agency']} (Fit Score: {grant['fit_score']}%)"):
+        with st.expander(f"{grant['title']} - {grant['agency']}"):  # Removed fit_score
             st.write(f"**Funding Weighted Score:** {grant['funding_weighted_score'] if grant['funding_weighted_score'] is not None else 'N/A'}")
             st.write(f"**Deadline:** {grant['deadline'] if grant['deadline'] else 'N/A'}")
             st.write(f"**Specific Aims:** {grant['specific_aims']}")
@@ -65,7 +65,7 @@ for grant in st.session_state.grants:
 st.header("Collaborators")
 if st.session_state.collaborators:
     for collab in st.session_state.collaborators:
-        with st.expander(f"{collab['name']} (Fit Score: {collab['fit_score']}%, Status: {collab['status']}"):
+        with st.expander(f"{collab['name']} (Status: {collab['status']}"):  # Removed fit_score
             st.write(f"**Expertise:** {collab['expertise']}")
 else:
     st.write("No collaborators available.")
