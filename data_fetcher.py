@@ -58,7 +58,7 @@ def fetch_opportunities(keywords=None, sources=None):
             except requests.exceptions.RequestException as e:
                 print(f"Failed to connect to Grants.gov API: {e}")
         elif source == "WebScrape":
-            url = "https://www.grants.gov/search-grants"  # Corrected URL
+            url = "https://www.grants.gov/search-grants"
             params = {"keywords": " ".join(keywords)}
             headers = {
                 "User-Agent": "GreenAnjouDashboard/1.0 (bill.jackson@basepairbio.com)"
@@ -69,21 +69,20 @@ def fetch_opportunities(keywords=None, sources=None):
                 print(f"Response status code: {response.status_code}")
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, "html.parser")
-                    # Target the table body containing the results
                     table = soup.find("table", class_="usa-table usa-table--striped")
                     if table:
                         tbody = table.find("tbody")
                         if tbody:
-                            opportunities = tbody.find_all("tr", attrs={"data-v-d36d4de3": True})  # Filter rows with the data attribute
+                            opportunities = tbody.find_all("tr", attrs={"data-v-d36d4de3": True})
                             print(f"Scraped {len(opportunities)} items")
                             for row in opportunities:
                                 cells = row.find_all("td")
-                                if len(cells) >= 5:  # Ensure we have all columns (Number, Title, Agency, Status, Posted, Close)
+                                if len(cells) >= 5:
                                     grants_data.append({
                                         "title": cells[1].text.strip() if cells[1].text.strip() else "Unnamed Opportunity",
                                         "agency": cells[2].text.strip() if cells[2].text.strip() else "Unknown",
                                         "funding_weighted_score": 0,
-                                        "deadline": cells[5].text.strip() if cells[5].text.strip() else "",  # Close Date
+                                        "deadline": cells[5].text.strip() if cells[5].text.strip() else "",
                                         "specific_aims": "Scraped description placeholder",
                                         "responding": False,
                                         "status": cells[3].text.strip() if cells[3].text.strip() else "In Process"
@@ -99,7 +98,6 @@ def fetch_opportunities(keywords=None, sources=None):
         elif source == "NIH":
             pass
 
-    # Force mock data if no results
     if not grants_data:
         print("!!! FORCED MOCK DATA ADDED !!!")
         grants_data.append({
