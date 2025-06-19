@@ -59,7 +59,7 @@ def fetch_opportunities(keywords=None, sources=None):
             except requests.exceptions.RequestException as e:
                 print(f"Failed to connect to Grants.gov API: {e}")
         elif source == "WebScrape":
-            url = "https://www.grants.gov/search-grants"  # Updated to the correct Search for Grants URL
+            url = "https://www.grants.gov/search-grants"
             params = {"keywords": " ".join(keywords)}
             headers = {
                 "User-Agent": "GreenAnjouDashboard/1.0 (bill.jackson@basepairbio.com)"
@@ -70,26 +70,30 @@ def fetch_opportunities(keywords=None, sources=None):
                 print(f"Response status code: {response.status_code}")
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, "html.parser")
-                    # Verify these classes by inspecting https://www.grants.gov/search-grants
-                    opportunities = soup.find_all("div", class_="search-result")  # Placeholder, adjust
-                    print(f"Scraped {len(opportunities)} items")
-                    for item in opportunities:
-                        title_elem = item.find("h2", class_="search-result-title")  # Placeholder, adjust
-                        agency_elem = item.find("span", class_="agency-name")  # Placeholder, adjust
-                        deadline_elem = item.find("span", class_="close-date")  # Placeholder, adjust
-                        title = title_elem.text.strip() if title_elem else "Unnamed Opportunity"
-                        agency = agency_elem.text.strip() if agency_elem else "Unknown"
-                        deadline = deadline_elem.text.strip() if deadline_elem else ""
-                        grants_data.append({
-                            "title": title,
-                            "agency": agency,
-                            "fit_score": 0,
-                            "funding_weighted_score": 0,
-                            "deadline": deadline,
-                            "specific_aims": "Scraped description placeholder",
-                            "responding": False,
-                            "status": "In Process"
-                        })
+                    # Target the table body containing the results
+                    table = soup.find("table", class_="usa-table usa-table--striped")
+                    if table:
+                        tbody = table.find("tbody")
+                        if tbody:
+                            opportunities = tbody.find_all("tr", attrs={"data-v-d36d4de3": True})  # Filter rows with the data attribute
+                            print(f"Scraped {len(opportunities)} items")
+                            for row in opportunities:
+                                cells = row.find_all("td")
+                                if len(cells) >= 5:  # Ensure we have all columns (Number, Title, Agency, Status, Posted, Close)
+                                    grants_data.append({
+                                        "title": cells[1].text.strip() if cells[1].text.strip() else "Unnamed Opportunity",
+                                        "agency": cells[2].text.strip() if cells[2].text.strip() else "Unknown",
+                                        "fit_score": 0,
+                                        "funding_weighted_score": 0,
+                                        "deadline": cells[5].text.strip() if cells[5].text.strip() else "",  # Close Date
+                                        "specific_aims": "Scraped description placeholder",
+                                        "responding": False,
+                                        "status": cells[3].text.strip() if cells[3].text.strip() else "In Process"
+                                    })
+                        else:
+                            print("No <tbody> found in the table")
+                    else:
+                        print("No table with class 'usa-table usa-table--striped' found")
                 else:
                     print(f"Web scrape request failed with status code: {response.status_code}, Response: {response.text}")
             except requests.exceptions.RequestException as e:
@@ -127,4 +131,14 @@ def fetch_collaborators():
         json.dump(collaborators_data, f)
     return df
 
-def calculate_fit
+def calculate_fit_score(description, keywords):
+    if not description or not keywords:
+        return 0
+    score = sum(1 for keyword in keywords if keyword.lower() in description.lower()) * (100 / len(keywords)) if keywords else 0
+    return min(100, max(0, score))
+
+if __name__ == "__main__":
+    df_opp = fetch_opportunities()
+    df_collab = fetch_collaborators()
+    print("Opportunities:\n", df_opp)
+    print("Collaborators:\n", df_collab)
