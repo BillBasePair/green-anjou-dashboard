@@ -31,7 +31,7 @@ if st.button("Refresh Now", key="main_refresh", on_click=refresh_data):
 st.write("Debug: Grants data:", st.session_state.grants)
 if st.session_state.grants:
     for grant in st.session_state.grants:
-        with st.expander(f"{grant['title']} - {grant['agency']}"):  # Removed fit_score
+        with st.expander(f"{grant['title']} - {grant['agency']}"):
             st.write(f"**Funding Weighted Score:** {grant['funding_weighted_score'] if grant['funding_weighted_score'] is not None else 'N/A'}")
             st.write(f"**Deadline:** {grant['deadline'] if grant['deadline'] else 'N/A'}")
             st.write(f"**Specific Aims:** {grant['specific_aims']}")
